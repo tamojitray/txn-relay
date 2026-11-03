@@ -14,6 +14,15 @@ The main engineering goals were:
 - Make failures visible and retryable.
 - Package the service as a reproducible Docker image.
 
+## Live deployment
+
+The API is publicly available at **<https://txn.tamojitray.in/>**.
+
+- Health check: <https://txn.tamojitray.in/>
+- Swagger UI: <https://txn.tamojitray.in/docs>
+- ReDoc: <https://txn.tamojitray.in/redoc>
+- OpenAPI schema: <https://txn.tamojitray.in/openapi.json>
+
 ## API endpoints
 
 | Method | Endpoint | Description |
@@ -197,10 +206,17 @@ docker compose up --build
 
 ## API usage
 
+The following examples use the live deployment. To test a locally running instance instead,
+change the base URL to `http://localhost:8000`.
+
+```powershell
+$baseUrl = "https://txn.tamojitray.in"
+```
+
 ### Health check
 
 ```powershell
-Invoke-RestMethod http://localhost:8000/
+Invoke-RestMethod "$baseUrl/"
 ```
 
 Example:
@@ -228,7 +244,7 @@ $body = @{
 
 Invoke-RestMethod `
   -Method Post `
-  -Uri http://localhost:8000/v1/webhooks/transactions `
+  -Uri "$baseUrl/v1/webhooks/transactions" `
   -ContentType application/json `
   -Body $body
 ```
@@ -249,7 +265,7 @@ truth for the persisted status.
 ### Retrieve transaction status
 
 ```powershell
-Invoke-RestMethod http://localhost:8000/v1/transactions/txn_abc123def456
+Invoke-RestMethod "$baseUrl/v1/transactions/txn_abc123def456"
 ```
 
 Before processing finishes, the status is `PROCESSING` and `processed_at` is `null`. After roughly
