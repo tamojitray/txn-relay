@@ -63,6 +63,29 @@ A worker running alongside the API polls PostgreSQL, claims eligible rows, marks
 `PROCESSING`, performs the background operation, and finally stores `PROCESSED` with a completion
 timestamp.
 
+## Brief explanation of technical choices
+
+- **FastAPI:** I chose FastAPI for its asynchronous request handling, Pydantic validation, clear
+  dependency injection, and automatically generated OpenAPI documentation.
+- **Supabase PostgreSQL:** I used Supabase as the managed cloud database. PostgreSQL stores the
+  transaction records and also acts as a durable job queue, which keeps accepted work safe across
+  application restarts without introducing another infrastructure dependency.
+- **SQLAlchemy with asyncpg:** SQLAlchemy provides a maintainable repository layer, while asyncpg
+  allows database operations to remain non-blocking under concurrent webhook traffic.
+- **Database-backed background processing:** I chose a persistent worker queue instead of FastAPI
+  `BackgroundTasks` because an in-memory task could be lost after the API has already returned
+  `202 Accepted`.
+- **Database-enforced idempotency:** `transaction_id` is the primary key, and inserts use
+  `ON CONFLICT DO NOTHING`. This prevents concurrent duplicate webhook deliveries from creating
+  duplicate transactions.
+- **Safe concurrency and recovery:** Workers use `FOR UPDATE SKIP LOCKED` to claim different jobs
+  safely. Processing leases, exponential retries, and a final `FAILED` state handle crashes and
+  temporary downstream errors.
+- **Docker:** I containerized the service so the application and its dependencies can be built and
+  run consistently across local, testing, and deployment environments.
+- **Pytest and Ruff:** Automated tests cover the API, validation, duplicate handling, and worker
+  completion. Ruff keeps formatting and code-quality checks consistent.
+
 ## Key design decisions
 
 ### Durable processing instead of in-memory background tasks
